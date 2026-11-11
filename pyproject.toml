@@ -1,0 +1,16 @@
+[project]
+name = "naeilbiseo"
+version = "0.1.0"
+description = "내일비서 — 내 컴퓨터에서 일하는 로컬 AI 업무/목회 비서"
+requires-python = ">=3.10"
+dependencies = ["PySide6-Essentials>=6.7"]
+
+[project.gui-scripts]
+naeilbiseo = "naeilbiseo.app:main"
+
+[tool.setuptools.packages.find]
+include = ["naeilbiseo*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
