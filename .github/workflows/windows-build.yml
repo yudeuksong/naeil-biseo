@@ -1,5 +1,6 @@
 # Builds and smoke-tests the Windows exe on a real Windows machine.
-# NOTE: this workflow has not been run yet. Until it passes on GitHub, the exe is unverified.
+# What a green run proves: tests pass on Windows, PyInstaller builds the exe, and the exe passes its
+# mock-mode self-test (nothing is sent anywhere). It does NOT prove the real AI connection works.
 name: windows-build
 
 on:
@@ -23,7 +24,7 @@ jobs:
       - name: Run tests
         env:
           QT_QPA_PLATFORM: offscreen
-        run: python -m pytest -v
+        run: python -m pytest -vv -rs
       - name: Build exe
         run: python -m PyInstaller --noconfirm --clean packaging/naeilbiseo.spec
       - name: Self-test the built exe (mock mode)
@@ -35,7 +36,17 @@ jobs:
           $p = Start-Process -FilePath "dist\NaeilBiseo\NaeilBiseo.exe" -ArgumentList "--self-test" -Wait -PassThru
           Get-Content (Join-Path $data "selftest_result.txt") -Encoding UTF8
           if ($p.ExitCode -ne 0) { exit $p.ExitCode }
-      - uses: actions/upload-artifact@v4
+      - name: Pack the build into one zip
+        shell: pwsh
+        run: Compress-Archive -Path "dist\NaeilBiseo" -DestinationPath "NaeilBiseo-windows.zip"
+      # The upload is allowed to fail: when the account-wide Actions artifact storage quota is full,
+      # the upload is refused, and that must not hide whether tests / build / self-test passed.
+      - name: Upload the exe zip (kept 3 days)
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: NaeilBiseo-windows
-          path: dist/NaeilBiseo
+          path: NaeilBiseo-windows.zip
+          retention-days: 3
+          if-no-files-found: error
+          compression-level: 0

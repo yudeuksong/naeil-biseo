@@ -193,28 +193,42 @@ QT_QPA_PLATFORM=offscreen QT_SCALE_FACTOR=2 .venv/bin/python tools/make_screensh
 
 ## 9. Windows exe 만들기
 
-**이 저장소의 exe 빌드는 Windows 에서 아직 실행·검증되지 않았습니다.** 개발은 Linux 에서 했고,
-같은 spec 으로 Linux 용 PyInstaller 빌드와 자가 점검만 확인했습니다. 절차:
+### 확인된 것과 아닌 것
+
+GitHub Actions 의 Windows 러너(`windows-latest`, Python 3.12)에서 2026-11-11 에 다음이 통과했습니다.
+
+| 단계 | 결과 |
+|---|---|
+| 테스트 | 135 통과, 1 건너뜀(실제 AI 테스트). Windows 전용인 정션 차단·대소문자 테스트 포함 |
+| PyInstaller exe 빌드 | 성공 (`dist\NaeilBiseo\NaeilBiseo.exe`) |
+| 만든 exe 의 자가 점검 | 통과 — **모의 모드**(외부 전송 없음)로 창을 만들고 질문 한 번을 보내는 것까지 |
+
+**여기까지만 확인됐습니다.** 자가 점검은 모의 모드이므로 **실제 AI(Claude Code) 연결은 Windows 에서 따로 확인해야 합니다.**
+사람이 직접 창을 띄워 쓰는 동작도 아직 확인하지 않았습니다(CI 는 창 없이 돕니다).
+
+Windows 에서 아직 확인이 남은 것:
+
+1. `run_windows.bat` 또는 exe 로 창을 띄워 쓰기, 한글 글꼴(맑은 고딕)·큰 글씨 표시
+2. 실제 `claude.exe`/`claude.cmd` 를 찾아 로그인 상태를 읽고 답을 받는지
+   (`.cmd` 를 거쳐도 `--tools ""` 빈 인자가 유지되는 것은 가짜 CLI 로 CI 에서 확인됨)
+3. 멈춤 단추가 실제 CLI 와 그 자식 프로세스를 모두 끝내는지 (가짜 CLI 로는 CI 에서 확인됨)
+4. SmartScreen 경고(코드 서명 없음) 뒤 실행
+
+### 직접 빌드하기
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1
 ```
 
 (또는 `packaging\build_windows.bat` 두 번 누르기.) 스크립트는 가상 환경 → 의존성 설치 → 테스트 → PyInstaller 빌드 →
-만든 exe 의 자가 점검(`NaeilBiseo.exe --self-test`, 모의 모드·외부 전송 없음) 순서로 진행하고,
-결과물은 `dist\NaeilBiseo\NaeilBiseo.exe` 입니다. 폴더째로 옮겨 씁니다.
+만든 exe 의 자가 점검(`NaeilBiseo.exe --self-test`) 순서로 진행하고, 결과물은 `dist\NaeilBiseo\NaeilBiseo.exe` 입니다.
+폴더째로 옮겨 씁니다. 이 스크립트 자체는 아직 Windows 에서 돌려 보지 않았습니다(CI 는 같은 단계를 워크플로로 실행합니다).
 
-GitHub 에 올리면 `.github/workflows/windows-build.yml` 이 Windows 러너에서 테스트·빌드·자가 점검을 하고 exe 를 올려 줍니다
-(이 워크플로도 아직 한 번도 돌려 보지 않았습니다).
+### GitHub Actions
 
-Windows 에서 확인이 남은 것:
-
-1. `run_windows.bat` 로 실행, 한글 글꼴(맑은 고딕)·큰 글씨 표시
-2. `claude.exe`/`claude.cmd` 를 찾아 실행하는지, `--tools ""` 빈 인자가 `.cmd` 를 거쳐도 유지되는지
-   (유지되지 않으면 앱이 시작 정보 검사에서 감지해 실행을 멈춥니다)
-3. 멈춤 단추가 `taskkill /T` 로 CLI 와 자식 프로세스를 모두 끝내는지
-4. 정션(junction)·바로 가기 차단, NTFS 대소문자 구분 없음 처리
-5. PyInstaller exe 의 실행과 SmartScreen 경고(코드 서명 없음)
+`main` 에 올리거나 수동 실행하면 `.github/workflows/windows-build.yml` 이 테스트·빌드·자가 점검을 하고,
+exe 폴더를 zip 한 개로 묶어 3일 보관 아티팩트로 올립니다. 계정의 Actions 아티팩트 저장 용량이 가득 차 있으면
+올리기 단계만 실패로 표시되고, 테스트·빌드 결과는 그대로 보입니다.
 
 ## 10. 아직 없는 것(다음 단계)
 
